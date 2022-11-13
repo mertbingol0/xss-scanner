@@ -33,7 +33,7 @@ def submit_forms(form_details,url,value):
     inputs = form_details["inputs"] #form detailden vermis oldugumuz inputu inputs degiskenine atiyoruz.
     data  = {}
 
-#inputlarin icerisine giriyoruz.
+#inputlar
     for input in inputs:
         if input["type"] == "text" or input["type"] == "search": #eger aldimiz input degerinin type'i text ise yada search ise bu kosula gir ve value ile xss payloadimizi input'a ver.
             input["value"] = value 
@@ -46,10 +46,11 @@ def submit_forms(form_details,url,value):
             else: # eger method degeri post degilse, get metodu ile request at.
                 return requests.get(target_url,params=data)
 
+#Burada da alinan url uzerinde xss zafiyeti icin bir payload islemi yapiliyor.
 def xss_scanner (url):
     forms = get_all_forms(url)
     print("Searching for XSS vulnerability...")
-    xss_payload = "<script>alert('xss_test')</script>"
+    xss_payload = "<script>alert('xss-test')</script>"
     is_vuln = False 
     for form in forms: #bazi sitelerde birden fazla form bolumu olabiliyor. Bu nedenle tum formlari inceleyecek bir dongu yazdik.
         form_details = get_forms_details(form)
