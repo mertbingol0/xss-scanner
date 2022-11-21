@@ -1,3 +1,9 @@
+"""
+xss-scanner
+Author: mertbingol0
+Date: 11/13/2022
+"""
+
 from bs4 import BeautifulSoup as bs 
 from urllib.parse import urljoin
 import requests 
