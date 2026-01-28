@@ -4,9 +4,19 @@ Author: mertbingol0
 Date: 11/13/2022
 """
 
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup as bs
+
+DEFAULT_TIMEOUT = 10
+
+
 # Define a function to retrieve all the forms present on the webpage
 def get_all_forms(url):
-    soup = bs(requests.get(url).content, "html.parser")
+    response = requests.get(url, timeout=DEFAULT_TIMEOUT)
+    response.raise_for_status()
+    soup = bs(response.content, "html.parser")
     return soup.find_all("form")
 
 # Define a function to retrieve all the details of a given form
@@ -14,7 +24,7 @@ def get_forms_details(form):
     details = {}
     
     # Extract the 'action' attribute of the form
-    action = form.attrs.get("action").lower()
+    action = form.attrs.get("action", "").lower()
     
     # Extract the 'method' attribute of the form
     method = form.attrs.get("method", "get").lower()
@@ -41,19 +51,18 @@ def submit_forms(form_details, url, value):
     
     # For each input field, set its value to the XSS payload if it is of type 'text' or 'search'
     for input in inputs:
-        if input["type"] == "text" or input["type"] == "search":
+        if input["type"] in {"text", "search"}:
             input["value"] = value
             input_name = input.get("name")
             input_value = input.get("value")
             if input_name and input_value:
                 data[input_name] = input_value
-        
-        # If the form method is 'POST', make a POST request with the form data
-        if form_details["method"] == "post":
-            return requests.post(target_url, data=data)
-        # If the form method is not 'POST', make a GET request with the form data
-        else:
-            return requests.get(target_url, params=data)
+
+    # If the form method is 'POST', make a POST request with the form data
+    if form_details["method"] == "post":
+        return requests.post(target_url, data=data, timeout=DEFAULT_TIMEOUT)
+    # If the form method is not 'POST', make a GET request with the form data
+    return requests.get(target_url, params=data, timeout=DEFAULT_TIMEOUT)
 
 # Define a function to scan a webpage for XSS vulnerabilities
 def xss_scanner(url):
@@ -65,7 +74,7 @@ def xss_scanner(url):
     # For each form on the webpage, submit it with an XSS payload and check if the payload is present in the response
     for form in forms:
         form_details = get_forms_details(form)
-        content = submit_forms(form_details, url, xss_payload).content.decode()
+        content = submit_forms(form_details, url, xss_payload).text
         if xss_payload in content:
             print("XSS vulnerability detected!")
             is_vuln = True
@@ -76,3 +85,5 @@ def xss_scanner(url):
 if __name__ == "__main__":
     url = input("Enter site address for XSS search: ")
     is_vulne = xss_scanner(url)
+    if not is_vulne:
+        print("No XSS vulnerabilities detected.")
