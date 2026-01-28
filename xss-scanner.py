@@ -7,16 +7,19 @@ Date: 11/13/2022
 from urllib.parse import urljoin
 
 import requests
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup
 
 DEFAULT_TIMEOUT = 10
+DEFAULT_HEADERS = {
+    "User-Agent": "xss-scanner/1.0 (+https://example.com)",
+}
 
 
 # Define a function to retrieve all the forms present on the webpage
 def get_all_forms(url):
-    response = requests.get(url, timeout=DEFAULT_TIMEOUT)
+    response = requests.get(url, headers=DEFAULT_HEADERS, timeout=DEFAULT_TIMEOUT)
     response.raise_for_status()
-    soup = bs(response.content, "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")
     return soup.find_all("form")
 
 # Define a function to retrieve all the details of a given form
@@ -60,9 +63,19 @@ def submit_forms(form_details, url, value):
 
     # If the form method is 'POST', make a POST request with the form data
     if form_details["method"] == "post":
-        return requests.post(target_url, data=data, timeout=DEFAULT_TIMEOUT)
+        return requests.post(
+            target_url,
+            data=data,
+            headers=DEFAULT_HEADERS,
+            timeout=DEFAULT_TIMEOUT,
+        )
     # If the form method is not 'POST', make a GET request with the form data
-    return requests.get(target_url, params=data, timeout=DEFAULT_TIMEOUT)
+    return requests.get(
+        target_url,
+        params=data,
+        headers=DEFAULT_HEADERS,
+        timeout=DEFAULT_TIMEOUT,
+    )
 
 # Define a function to scan a webpage for XSS vulnerabilities
 def xss_scanner(url):
@@ -83,7 +96,7 @@ def xss_scanner(url):
 
 # If the script is run from the command line, prompt the user for a URL to scan and call the 'xss_scanner' function
 if __name__ == "__main__":
-    url = input("Enter site address for XSS search: ")
+    url = input("Enter site address for XSS search: ").strip()
     is_vulne = xss_scanner(url)
     if not is_vulne:
         print("No XSS vulnerabilities detected.")
